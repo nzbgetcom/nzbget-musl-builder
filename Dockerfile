@@ -99,6 +99,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         ncurses-bin \
         ninja-build \
         perl \
+        python3 \        
         unzip \
         xz-utils \
     && rm -rf /var/lib/apt/lists/*
