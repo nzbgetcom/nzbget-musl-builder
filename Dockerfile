@@ -48,6 +48,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         ncurses-bin \
         ninja-build \
         patch \
+        python3 \
         texinfo \
         unzip \
         wget \

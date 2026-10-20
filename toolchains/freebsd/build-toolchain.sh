@@ -50,6 +50,9 @@ esac
 
 URL_CURRENT="https://download.freebsd.org/releases/$REL_PATH/$FREEBSD_VERSION-RELEASE/base.txz"
 URL_ARCHIVE="https://archive.freebsd.org/old-releases/$REL_PATH/$FREEBSD_VERSION-RELEASE/base.txz"
+# 13.0 has left the current release tree. archive.freebsd.org is often
+# unreachable; this mirror still publishes the same MANIFEST checksums.
+URL_MIRROR="https://mirror.cspacehostings.com/pub/FreeBSD/releases/$REL_PATH/$FREEBSD_VERSION-RELEASE/base.txz"
 
 # Official SHA-256 checksums from FreeBSD release MANIFESTs:
 #   amd64: https://archive.freebsd.org/old-releases/amd64/13.0-RELEASE/MANIFEST
@@ -95,14 +98,14 @@ get_expected_sha256() {
     # Fallback for other versions: query official HTTPS MANIFEST
     local manifest_url="https://download.freebsd.org/releases/$REL_PATH/$FREEBSD_VERSION-RELEASE/MANIFEST"
     local sha
-    sha=$(curl -fsSL "$manifest_url" 2>/dev/null | awk '$1 == "base.txz" { print $2 }')
+    sha=$(curl -fsSL --connect-timeout 10 "$manifest_url" 2>/dev/null | awk '$1 == "base.txz" { print $2 }')
     if [ -n "$sha" ]; then
         echo "$sha"
         return 0
     fi
 
     manifest_url="https://archive.freebsd.org/old-releases/$REL_PATH/$FREEBSD_VERSION-RELEASE/MANIFEST"
-    sha=$(curl -fsSL "$manifest_url" 2>/dev/null | awk '$1 == "base.txz" { print $2 }')
+    sha=$(curl -fsSL --connect-timeout 10 "$manifest_url" 2>/dev/null | awk '$1 == "base.txz" { print $2 }')
     if [ -n "$sha" ]; then
         echo "$sha"
         return 0
@@ -146,7 +149,8 @@ verify_base() {
 # fetch one url into the cache; any failure removes the partial file
 fetch_base() {
     rm -f "$SRCDIR/$FREEBSD_BASE.part"
-    if ! curl -fL -o "$SRCDIR/$FREEBSD_BASE.part" "$1"; then
+    if ! curl -fL --connect-timeout 10 --retry 2 --retry-delay 2 \
+            -o "$SRCDIR/$FREEBSD_BASE.part" "$1"; then
         rm -f "$SRCDIR/$FREEBSD_BASE.part"
         return 1
     fi
@@ -158,16 +162,17 @@ fetch_base() {
     mv "$SRCDIR/$FREEBSD_BASE.part" "$SRCDIR/$FREEBSD_BASE"
 }
 
-# current release location first, FreeBSD HTTPS archive as fallback for old versions
+# Current releases first, then the official archive, then a mirror that still
+# carries 13.0. Each attempt fails fast when the host is unreachable.
 download_base() {
     echo "Downloading FreeBSD $FREEBSD_VERSION base image ($SYSROOT_ARCH)"
-    if fetch_base "$URL_CURRENT"; then
-        return 0
-    fi
-    echo "  primary source failed, trying FreeBSD HTTPS archive"
-    if fetch_base "$URL_ARCHIVE"; then
-        return 0
-    fi
+    local url
+    for url in "$URL_CURRENT" "$URL_ARCHIVE" "$URL_MIRROR"; do
+        echo "  trying $url"
+        if fetch_base "$url"; then
+            return 0
+        fi
+    done
     echo "ERROR: unable to download verified FreeBSD base image from HTTPS sources"
     exit 1
 }
