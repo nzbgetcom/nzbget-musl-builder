@@ -1,4 +1,4 @@
-name: images
+name: build
 
 on:
   workflow_dispatch:
@@ -38,6 +38,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Login to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
         with:
@@ -56,6 +63,9 @@ jobs:
           outputs: type=local,dest=out
           build-args: |
             TARGET=linux-${{ matrix.arch }}
+            PLATFORM=linux
+          cache-from: type=registry,ref=${{ env.IMAGE }}:cache-linux-${{ matrix.arch }}
+          cache-to: type=registry,ref=${{ env.IMAGE }}:cache-linux-${{ matrix.arch }},mode=max,ignore-error=true
 
       - name: Upload linux ${{ matrix.arch }} tarball
         uses: actions/upload-artifact@v7
@@ -75,6 +85,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Login to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
@@ -89,6 +106,9 @@ jobs:
           outputs: type=local,dest=out
           build-args: |
             TARGET=freebsd-${{ matrix.arch }}
+            PLATFORM=freebsd
+          cache-from: type=registry,ref=${{ env.IMAGE }}:cache-freebsd-${{ matrix.arch }}
+          cache-to: type=registry,ref=${{ env.IMAGE }}:cache-freebsd-${{ matrix.arch }},mode=max,ignore-error=true
 
       - name: Upload freebsd ${{ matrix.arch }} tarball
         uses: actions/upload-artifact@v7
@@ -104,6 +124,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Login to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
@@ -118,6 +145,9 @@ jobs:
           outputs: type=local,dest=out
           build-args: |
             TARGET=android
+            PLATFORM=android
+          cache-from: type=registry,ref=${{ env.IMAGE }}:cache-android
+          cache-to: type=registry,ref=${{ env.IMAGE }}:cache-android,mode=max,ignore-error=true
 
       - name: Upload android tarball
         uses: actions/upload-artifact@v7
@@ -166,6 +196,10 @@ jobs:
           build-args: |
             TARGET=linux-${{ matrix.arch }}
             IMAGE_VERSION=${{ needs.prepare.outputs.image_version }}
+          cache-from: |
+            type=registry,ref=${{ env.IMAGE }}:cache-image
+            type=registry,ref=${{ env.IMAGE }}:cache-image-linux-${{ matrix.arch }}
+          cache-to: type=registry,ref=${{ env.IMAGE }}:cache-image-linux-${{ matrix.arch }},mode=max,ignore-error=true
 
   freebsd-image:
     needs: [prepare, freebsd-toolchain]
@@ -207,6 +241,10 @@ jobs:
           build-args: |
             TARGET=freebsd-${{ matrix.arch }}
             IMAGE_VERSION=${{ needs.prepare.outputs.image_version }}
+          cache-from: |
+            type=registry,ref=${{ env.IMAGE }}:cache-image
+            type=registry,ref=${{ env.IMAGE }}:cache-image-freebsd-${{ matrix.arch }}
+          cache-to: type=registry,ref=${{ env.IMAGE }}:cache-image-freebsd-${{ matrix.arch }},mode=max,ignore-error=true
 
   android-image:
     needs: [prepare, android-toolchain]
@@ -244,6 +282,10 @@ jobs:
           build-args: |
             TARGET=android
             IMAGE_VERSION=${{ needs.prepare.outputs.image_version }}
+          cache-from: |
+            type=registry,ref=${{ env.IMAGE }}:cache-image
+            type=registry,ref=${{ env.IMAGE }}:cache-image-android
+          cache-to: type=registry,ref=${{ env.IMAGE }}:cache-image-android,mode=max,ignore-error=true
 
   all-image:
     needs: [prepare, linux-toolchain, freebsd-toolchain, android-toolchain]
@@ -295,6 +337,12 @@ jobs:
           build-args: |
             TARGET=all
             IMAGE_VERSION=${{ needs.prepare.outputs.image_version }}
+          cache-from: |
+            type=registry,ref=${{ env.IMAGE }}:cache-image
+            type=registry,ref=${{ env.IMAGE }}:cache-image-all
+          cache-to: |
+            type=registry,ref=${{ env.IMAGE }}:cache-image,mode=max,ignore-error=true
+            type=registry,ref=${{ env.IMAGE }}:cache-image-all,mode=max,ignore-error=true
 
   cleanup:
     needs: [linux-image, freebsd-image, android-image, all-image]

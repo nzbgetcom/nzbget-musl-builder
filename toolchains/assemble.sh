@@ -12,8 +12,9 @@
 set -euo pipefail
 
 TARGET="${TARGET:-all}"
-LINUX_ARCHS="${LINUX_ARCHS:-x86_64 aarch64 armhf armel i686 ppc6xx riscv64}"
-FREEBSD_ARCHS="${FREEBSD_ARCHS:-x86_64 aarch64}"
+# linux-<arch> and freebsd-<arch> TARGET values must be in these lists.
+LINUX_ARCHS="x86_64 aarch64 armhf armel i686 ppc6xx riscv64"
+FREEBSD_ARCHS="x86_64 aarch64"
 DIST="${DIST:-/tmp/dist}"
 OUT="${OUT:-/out}"
 ROOT=$(cd "$(dirname "$0")" && pwd)
