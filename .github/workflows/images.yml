@@ -295,3 +295,18 @@ jobs:
           build-args: |
             TARGET=all
             IMAGE_VERSION=${{ needs.prepare.outputs.image_version }}
+
+  cleanup:
+    needs: [linux-image, freebsd-image, android-image, all-image]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Cleanup ghcr.io from outdated images
+        uses: miklinux/ghcr-cleanup-action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          package-owner: ${{ github.repository_owner }}
+          package-name: ${{ github.event.repository.name }}
+          keep-versions: 1000000
+          delete-orphans: true
+          dry-run: false
