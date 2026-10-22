@@ -20,7 +20,7 @@ Images are published at `ghcr.io/nzbgetcom/nzbget-musl-builder`. The tag suffix 
 
 Linux toolchains are GCC 14.3.0, Binutils 2.44, and musl 1.2.6, built with [musl-cross-make](https://github.com/richfelker/musl-cross-make). FreeBSD images carry a 13.0 sysroot; the compiler is the image's Clang 19. Android images carry LLVM 19.1.7, the Android NDK r26b sysroot, and a static libc++ built for API 21.
 
-Every image is Debian trixie and also has the host tools NZBGet's builds expect: Clang 19, LLD, CMake, Ninja, NASM, g++, make, git, and Python 3. The working directory is `/src`.
+Every image is Debian `trixie-20261020-slim` (`DEBIAN_IMAGE` in the Dockerfile) and also has the host tools NZBGet's builds expect: Clang 19, LLD, CMake, Ninja, NASM, g++, make, git, and Python 3. The working directory is `/src`.
 
 ## Build
 

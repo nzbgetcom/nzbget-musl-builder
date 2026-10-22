@@ -13,6 +13,7 @@
 #   dist/android.tar.gz
 #
 # Build-args:
+#   DEBIAN_IMAGE    base image for build-base and image-runtime
 #   PLATFORM        linux | freebsd | android | all (default all)
 #                   Which toolchains/<PLATFORM>/ scripts are copied.
 #                   all copies the whole toolchains/ tree.
@@ -25,12 +26,13 @@
 #   image               unpack dist/ into a runtime image; no compile stages
 #   image-from-source   default; compile (or unpack dist/ in compile) then pack
 
+ARG DEBIAN_IMAGE=debian:trixie-20261020-slim
 # linux | freebsd | android | all
 ARG PLATFORM=all
 # linux-<arch> | freebsd-<arch> | android | all
 ARG TARGET=all
 
-FROM debian:trixie-slim AS build-base
+FROM ${DEBIAN_IMAGE} AS build-base
 ENV DEBIAN_FRONTEND=noninteractive \
     LANG=C.UTF-8 \
     LC_ALL=C.UTF-8
@@ -89,7 +91,8 @@ FROM ${PLATFORM} AS toolchain
 FROM scratch AS artifact
 COPY --from=toolchain /out/ /
 
-FROM debian:trixie-slim AS image-runtime
+ARG DEBIAN_IMAGE
+FROM ${DEBIAN_IMAGE} AS image-runtime
 ENV DEBIAN_FRONTEND=noninteractive \
     LANG=C.UTF-8 \
     LC_ALL=C.UTF-8 \
